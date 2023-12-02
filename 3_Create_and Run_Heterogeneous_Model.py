@@ -32,7 +32,7 @@ possible_diagnoses = pd.read_csv(r"C:\Users\David\Documents\David BYU-Idaho\Fall
 pos_d = possible_diagnoses["Acronym Name"]
 
 # %% # Read in the parquet files as the X variable
-file_path = "readings_test_" # change to "readings_test_" for doing a small portion of the data to work with before the real model. Use "readings" to run the real thing. It just takes a lot longer
+file_path = "readings_" # change to "readings_test_" for doing a small portion of the data to work with before the real model. Use "readings" to run the real thing. It just takes a lot longer
 for i in ("0","5000","10000","15000","20000","25000","30000","35000","40000","45000"):
     print(i)
     if os.path.exists(f"{file_path}{i}.parquet"):
@@ -42,15 +42,15 @@ for i in ("0","5000","10000","15000","20000","25000","30000","35000","40000","45
         else:
             dat_df = pd.concat([dat_df, pd.read_parquet(f"{file_path}{i}.parquet")])
 # %% # Read in the additional parquet file for the other x variables
-file_path = "result_test_" # change to "readings_test_" for doing a small portion of the data to work with before the real model. Use "readings" to run the real thing. It just takes a lot longer
+file_path = "joined_" # change to "readings_test_" for doing a small portion of the data to work with before the real model. Use "readings" to run the real thing. It just takes a lot longer
 for i in ("0","5000","10000","15000","20000","25000","30000","35000","40000","45000"):
     print(i)
     if os.path.exists(f"{file_path}{i}.parquet"):
         print(i)
         if i == "0":
-            result_df = pd.read_parquet(f"{file_path}{i}.parquet")
+            joined_df = pd.read_parquet(f"{file_path}{i}.parquet")
         else:
-            result_df = pd.concat([dat_df, pd.read_parquet(f"{file_path}{i}.parquet")])
+            joined_df = pd.concat([joined_df, pd.read_parquet(f"{file_path}{i}.parquet")])
 # %%
 columns_to_keep = ["Age", "Sex_M"]
 type = ["I",  "II","III","aVR", 
@@ -60,11 +60,11 @@ for i in type:
     columns_to_keep.append(f"{i}_std_elapsed_time")
 for i in type:
     columns_to_keep.append(f"{i}_median_elapsed_time")
-X2 = result_df[columns_to_keep].fillna(0)
+X2 = joined_df[columns_to_keep].fillna(0)
 
 
 # %% # Read in the records df
-y = pd.read_parquet("records.parquet")[y_var]
+y = pd.read_parquet("records_0.parquet")[y_var]
 
 # %% # Pivot the data and convert to numpy 3d array
 X = np.transpose(
@@ -161,10 +161,11 @@ F1 = f1_score(y_test, y_pred)
 print(f" Accuracy:  {accuracy:.7f}\n",
       f"Precision: {precision:.7f}\n",
       f"Recall:    {recall:.7f}\n",
-      f"F1:        {F1:.7f}",)
+      f"F1:        {F1:.7f}")
 
 # %% # Create a confusion matrix
 from sklearn.metrics import confusion_matrix
+
 conf_matrix = confusion_matrix(y_test, y_pred)
 
 # Display the confusion matrix using seaborn
@@ -174,4 +175,11 @@ plt.ylabel("True Labels")
 plt.title(f"Confusion Matrix for {y_var}")
 plt.show()
 
+# %% # 
+# from keras.utils import plot_model
+# # import pydotplus
+# # plot_model(model, "multi_input_and_output_model.png", show_shapes=True, expand_nested=True, dpi=300,dotprog=pydotplus)
+# plot_path = 'keras_model.png'
+# plot_model(model, to_file=plot_path, show_shapes=True, show_layer_names=True)
+# model.summary()
 # %%

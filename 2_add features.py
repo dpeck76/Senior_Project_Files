@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 # import wfdb
 import os
-import scipy.io as io
 from scipy.signal import find_peaks
 # %% # 2:Read in records_df (created in "1_create_parquet_files.py")
 feature_cols = ["mean", "median", "std",
@@ -22,11 +21,12 @@ for i in feature_cols:
 os.chdir("C:/users/David/Documents/David BYU-Idaho/Fall 2023/DS 499/Senior_Project_Files")
 readings_file_paths = [file for file in os.listdir(os.getcwd()) if file.startswith("readings") and file.endswith(".parquet")]
 records_file_paths = [file for file in os.listdir(os.getcwd()) if file.startswith("records") and file.endswith(".parquet")]
+readings_file_paths.remove('readings_5000.parquet')
+# %%
 for reading, record  in zip(readings_file_paths, records_file_paths):
   try:
     # print(i)
     # if os.path.exists(f"{file_path}{i}.parquet"):
-    
     readings_df = pd.read_parquet(reading)
     records_df = pd.read_parquet(record)
       
@@ -109,14 +109,14 @@ for reading, record  in zip(readings_file_paths, records_file_paths):
     readings_df["Record"] = readings_df["Record"].astype(str)
     records_df["Record"] = records_df["Record"].astype(str)
     # Perform an inner join
-    result_df = readings_df.merge(records_df, on="Record", how="inner")
+    joined_df = readings_df.merge(records_df, on="Record", how="inner")
     # Print out the shape of the data frames to ensure that the joins are going as expected
     print(f"readings_df from {reading} shape:", readings_df.shape, end = "")
     print(f"\nrecords_df from {record} shape:", records_df.shape, end = "")
-    print(f"\nresult_df shape:", result_df.shape)
+    print(f"\njoined_df shape:", joined_df.shape)
     # 10:Create Several parquet files so that 1: if it crashes partway through, we don't lose all of the work and 2: the files are a more manageable size
     # n is the number of lines you want to write at a time
-    result_df.to_parquet(f'joined_{reading[9:]}', index=False)    
+    joined_df.to_parquet(f'joined_{reading[9:]}', index=False)    
     print(f'Parquet file joined_{reading[9:]} created successfully.')
   except:
      print(f"Either {record} or {reading} isn't reading in right")

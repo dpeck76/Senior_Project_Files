@@ -14,14 +14,20 @@ for root, directories, files in os.walk(folder_path):
     for filename in files:
         file_path = os.path.join(root, filename)
         all_files.append(file_path)
-
+all_files = all_files\
+    .remove("..\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords\01\019\JS01052.hea")\
+    .remove("..\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords\01\019\JS01052.mat")\
+    .remove("..\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords\42\424\JS41800.hea")\
+    .remove("..\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords\42\424\JS41800.mat")
 # %% # 3:Pull the .hea files and the .mat files out of "all_files"
 # For each of the files in all_files, read in the ones that 
 # end in ".mat". 
 mat_files = [i for i in all_files if i.endswith(".mat")]
 # # Randomize the order here if that is to be done:
-# from random import shuffle
-# shuffle(mat_files, random_state = 40) # test this code at some point. I don't know for sure that it works. 
+from random import shuffle
+from random import seed
+seed(40)
+shuffle(mat_files) # test this code at some point. I don't know for sure that it works. 
 # For the .hea files, take off the ".hea" because that is 
 # how the function receives it. 
 hea_files = [i[:-4] for i in mat_files]
@@ -34,7 +40,7 @@ hea_files = hea_files[:num_rows]
 mat_files = mat_files[:num_rows]
 # %% # 5:Read all of the data and save them into a list object; first with records - 
 # How many records to read in at a time
-chunk_size = 5000
+chunk_size = 4520
 start_row = 0
 while start_row < num_rows:
     chunk_size = chunk_size if start_row + chunk_size < num_rows else num_rows - start_row
@@ -90,7 +96,7 @@ while start_row < num_rows:
     start_row += chunk_size
 
 # %%
-chunk_size = 5000
+chunk_size = 4520
 start_row = 0
 while start_row < num_rows:
     chunk_size = chunk_size if start_row + chunk_size < num_rows else num_rows - start_row
@@ -119,7 +125,4 @@ while start_row < num_rows:
     print(f'Parquet file readings_{start_row}.parquet created successfully.')
     start_row += chunk_size
 
-
-# %%
-
-# %%
+#%%
