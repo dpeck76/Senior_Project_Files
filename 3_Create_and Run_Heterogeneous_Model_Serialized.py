@@ -27,9 +27,10 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import MinMaxScaler
 from keras.utils import to_categorical
 # %% # Choose y-variable
-y_var = "SB"
 possible_diagnoses = pd.read_csv(r"C:\Users\David\Documents\David BYU-Idaho\Fall 2023\DS 499\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\ConditionNames_SNOMED-CT.csv")
 pos_d = possible_diagnoses["Acronym Name"]
+# Should be a list even if it is only one element long
+y_var = ["SB"]
 
 # %% # Read in the parquet files as the X variable
 def load_and_preprocess_data(joined_file_path, readings_file_path, y_var = pos_d):
@@ -53,23 +54,9 @@ def load_and_preprocess_data(joined_file_path, readings_file_path, y_var = pos_d
                     .fillna(0)\
                     .to_numpy()\
                     .tolist())\
-                    .reshape((-1, 12, 5000))
-                , (0, 2, 1))
+                .reshape((-1, 12, 5000))
+            , (0, 2, 1))
     return X, X2, y
-
-
-
-# %%
-# columns_to_keep = ["Age", "Sex_M"]
-# type = ["I",  "II","III","aVR", 
-#         "aVL","aVF","V1", "V2", 
-#         "V3", "V4", "V5", "V6"]
-# for i in type:
-#     columns_to_keep.append(f"{i}_std_elapsed_time")
-# for i in type:
-#     columns_to_keep.append(f"{i}_median_elapsed_time")
-# X2 = result_df[columns_to_keep].fillna(0)
-
 
 # %% # reandomly choose a file to be the test file
 from random import choice
@@ -107,7 +94,7 @@ other_inputs = keras.Input(shape = (111,), name = "other")
 concatenated_layer = keras.layers.concatenate([flatten, other_inputs])
 dense1 = (Dense(64, activation='relu'))(concatenated_layer)
 dense2 = (Dense(42, activation='relu'))(dense1)
-denseout = (Dense(1, activation='sigmoid'))(dense2)
+denseout = (Dense(len(y_var), activation='sigmoid'))(dense2)
 model = keras.Model(
     inputs=[input_voltages, other_inputs],
     outputs=[denseout],
@@ -120,7 +107,8 @@ optimizer = keras.optimizers.Adam(learning_rate=0.001)
 model.compile(
     optimizer=optimizer,
     loss='binary_crossentropy')  # Adjust the optimizer and loss function based on your problem
-#%%
+#%% # Train the model
+# Train the model
 i = 0
 for joined, readings in zip(joined_files, readings_files):
     # print(joined, pd.read_parquet(joined).shape)
@@ -134,7 +122,7 @@ for joined, readings in zip(joined_files, readings_files):
         {"voltages": X,
          "other"   : X2}, 
         y, 
-        epochs=1, 
+        epochs=3, 
         batch_size=32, 
         validation_split=0.2)  # Adjust the number of epochs, validation split, and batch size as needed
 
@@ -153,39 +141,69 @@ y_pred = np.round(y_pred_probs)
 
 # %% # Metrics
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-accuracy = accuracy_score(y_test, y_pred)
-precision = precision_score(y_test, y_pred)
-recall = recall_score(y_test, y_pred)
-F1 = f1_score(y_test, y_pred)
-print(f" Accuracy:  {accuracy:.7f}\n",
-      f"Precision: {precision:.7f}\n",
-      f"Recall:    {recall:.7f}\n",
-      f"F1:        {F1:.7f}",)
+y_pred = pd.DataFrame(y_pred)
+y_pred.columns = y_var
+for var in y_var:
+    accuracy = accuracy_score(y_test[var], y_pred[var])
+    precision = precision_score(y_test[var], y_pred[var])
+    recall = recall_score(y_test[var], y_pred[var])
+    F1 = f1_score(y_test[var], y_pred[var])
+    print(f" {var} Accuracy:  {accuracy:.7f}\n",
+        f"{var} Precision: {precision:.7f}\n",
+        f"{var} Recall:    {recall:.7f}\n",
+        f"{var} F1:        {F1:.7f}",)
 
 # %% # Create a confusion matrix
 from sklearn.metrics import confusion_matrix
-conf_matrix = confusion_matrix(y_test, y_pred)
-
-# Display the confusion matrix using seaborn
-sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Reds", annot_kws={"size": 16})
-plt.xlabel("Predicted Labels")
-plt.ylabel("True Labels")
-plt.title(f"Confusion Matrix for {y_var}")
-plt.show()
+for var in y_var:
+    conf_matrix = confusion_matrix(y_test[var], y_pred[var])
+    # Display the confusion matrix using seaborn
+    sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Reds", annot_kws={"size": 16})
+    plt.xlabel("Predicted Labels")
+    plt.ylabel("True Labels")
+    plt.title(f"Confusion Matrix for {var}")
+    plt.show()
 
 # %%
+y_pred_probs = pd.DataFrame(y_pred_probs)
+y_pred_probs.columns = y_var
 from sklearn.metrics import roc_curve, auc
-# Compute ROC curve and AUC
-fpr, tpr, thresholds = roc_curve(y_test, y_pred_probs)
-roc_auc = auc(fpr, tpr)
-
-# Plot the ROC curve
-plt.figure(figsize=(8, 8))
-plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = {:.2f})'.format(roc_auc))
-plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--', label='Random Guess')
-plt.xlabel('False Positive Rate (FPR)')
-plt.ylabel('True Positive Rate (TPR)')
-plt.title('Receiver Operating Characteristic (ROC) Curve')
-plt.legend(loc='lower right')
-plt.show()
+for var in y_var:
+    # Compute ROC curve and AUC
+    fpr, tpr, thresholds = roc_curve(y_test[var], y_pred_probs[var])
+    roc_auc = auc(fpr, tpr)
+    # Plot the ROC curve
+    plt.figure(figsize=(8, 8))
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = {:.2f})'.format(roc_auc))
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--', label='Random Guess')
+    plt.xlabel('False Positive Rate (FPR)')
+    plt.ylabel('True Positive Rate (TPR)')
+    plt.title(f'Receiver Operating Characteristic (ROC) Curve for {var}')
+    plt.legend(loc='lower right')
+    plt.show()
 # %%
+
+
+
+
+
+
+##########################
+
+from plotly import express as px
+def graph_it(n):
+    to_graph = list(readings["val"].iloc[n])
+    df = pd.DataFrame({"val": to_graph, "x": range(1, len(to_graph) + 1)})
+    fig = px.line(x = "x", y = "val", data_frame = df)
+    fig = fig.update_layout(
+        title='',
+        xaxis_title='Time (1/500 sec)',
+        yaxis_title='Voltage',
+        plot_bgcolor='rgba(255,255,255,1)',
+        paper_bgcolor='rgba(255,255,255,1)',
+        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+        yaxis=dict(showgrid=True, gridcolor='lightgray')
+    )
+    fig = fig.update_traces(line=dict(color='red'))
+    return fig
+

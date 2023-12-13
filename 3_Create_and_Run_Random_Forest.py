@@ -1,10 +1,11 @@
 # %% # choose the y-variable
 import pandas as pd
-y_var = "SR"
+# %%
+y_var = "1AVB"
 possible_diagnoses = pd.read_csv(r"C:\Users\David\Documents\David BYU-Idaho\Fall 2023\DS 499\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\ConditionNames_SNOMED-CT.csv")
 pos_d = possible_diagnoses["Acronym Name"]
-# diagnosis_counts = dat_df[possible_diagnoses["Acronym Name"]].sum(axis = 0)
-# diagnosis_counts.sort_values()[-10:]
+diagnosis_counts = dat_df[possible_diagnoses["Acronym Name"]].sum(axis = 0)
+diagnosis_counts.sort_values()[-10:]
 # 1AVB, 2AVB, 2AVB1, 2AVB2, 3AVB, ABI, ALS, APB, AQW, ARS
 # AVB, CCR, CR, ERV, FQRS, IDC, IVB, JEB, JPT, LBBB, LBBBB
 # LFBBB, LVH, LVQRSAL, LVQRSCL, LVQRSLL, MI, MIBW, MIFW
@@ -41,7 +42,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import MinMaxScaler
 # %% # 2:Read in the data
 file_path = "joined_" # change to "readings_test_" for doing a small portion of the data to work with before the real model. Use "readings" to run the real thing. It just takes a lot longer
-for i in ("0","5000","10000","15000","20000","25000","30000","35000","40000","45000","50000"):
+for i in (np.arange(0,40681,4520)):
     print(i)
     if os.path.exists(f"{file_path}{i}.parquet"):
         print(i)
