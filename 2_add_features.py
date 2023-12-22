@@ -1,7 +1,6 @@
 # %% # 1:Import needed libraries
 import numpy as np
 import pandas as pd
-# import wfdb
 import os
 from scipy.signal import find_peaks
 # %% # 2:Read in records_df (created in "1_create_parquet_files.py")
@@ -18,10 +17,10 @@ for i in feature_cols:
     for j in type:
         rdf_columns.append(j + "_" + i)
 # %% # 3:Read in readings_df (created in "1_create_parquet_files.py" as several parquet files)
+# Set the working directory to the folder where this is located - edit as needed. 
 os.chdir("C:/users/David/Documents/David BYU-Idaho/Fall 2023/DS 499/Senior_Project_Files")
 readings_file_paths = [file for file in os.listdir(os.getcwd()) if file.startswith("readings") and file.endswith(".parquet")]
 records_file_paths = [file for file in os.listdir(os.getcwd()) if file.startswith("records") and file.endswith(".parquet")]
-readings_file_paths.remove('readings_5000.parquet')
 # %%
 for reading, record  in zip(readings_file_paths, records_file_paths):
   try:

@@ -4,9 +4,10 @@ import pandas as pd
 import wfdb
 import os
 import scipy.io as io
-# import pyarrow
-# signal processing
+from random import shuffle
+from random import seed
 # %% # 2:Create the "all_files" list
+# Replace with your own file path to this file location
 os.chdir("C:/users/David/Documents/David BYU-Idaho/Fall 2023/DS 499/Senior_Project_Files")
 folder_path = "..\\electrocardiogram-database-arrhythmia-study"
 all_files = []
@@ -15,32 +16,24 @@ for root, directories, files in os.walk(folder_path):
         file_path = os.path.join(root, filename)
         all_files.append(file_path)
 all_files = all_files\
-    .remove("..\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords\01\019\JS01052.hea")\
     .remove("..\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords\01\019\JS01052.mat")\
-    .remove("..\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords\42\424\JS41800.hea")\
     .remove("..\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\WFDBRecords\42\424\JS41800.mat")
 # %% # 3:Pull the .hea files and the .mat files out of "all_files"
-# For each of the files in all_files, read in the ones that 
-# end in ".mat". 
+# For each of the files in all_files, read in the ones that end in ".mat". 
 mat_files = [i for i in all_files if i.endswith(".mat")]
-# # Randomize the order here if that is to be done:
-from random import shuffle
-from random import seed
+# Randomize the order
 seed(40)
-shuffle(mat_files) # test this code at some point. I don't know for sure that it works. 
-# For the .hea files, take off the ".hea" because that is 
-# how the function receives it. 
+shuffle(mat_files) 
+# For the .hea files, take off the ".hea" because that is how the function receives it. 
 hea_files = [i[:-4] for i in mat_files]
 # %% # 4:Determine how many of the patients' readings to use
-# We anticipate using all of this by the end to give the 
-# model all of the available data. However, for right now, 
-# we will only use a small part of it for testing purposes
-num_rows = 45152
-hea_files = hea_files[:num_rows]
+num_rows = 45152 # Use all of the data (num_rows = 45,152) to provide the best perfomance of the model; use less if testing or otherwise want a quicker result than you would get if you use it all
+initial_chunk_size = 4520 # Change this to whatever size you want/believe your computer can handle. I chose 4,520 because it was a good size for my computer's RAM. 
+hea_files = hea_files[:num_rows] # Change the files we are using to the num_rows variable value
 mat_files = mat_files[:num_rows]
 # %% # 5:Read all of the data and save them into a list object; first with records - 
 # How many records to read in at a time
-chunk_size = 4520
+chunk_size = initial_chunk_size
 start_row = 0
 while start_row < num_rows:
     chunk_size = chunk_size if start_row + chunk_size < num_rows else num_rows - start_row
@@ -72,7 +65,7 @@ while start_row < num_rows:
         .assign(Sex = sex)\
         .assign(Record = record)
     ### Create a column for each possible diagnosis in the database with 1 or 0 values for each of the rows
-    possible_diagnoses = pd.read_csv(r"C:\Users\David\Documents\David BYU-Idaho\Fall 2023\DS 499\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\ConditionNames_SNOMED-CT.csv")
+    possible_diagnoses = pd.read_csv(r"..\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\ConditionNames_SNOMED-CT.csv")
     # this is a df with 3 columns:
     # 1: The Snomed numeric code for the condition
     # 2: The Snomed acronym
@@ -95,8 +88,8 @@ while start_row < num_rows:
     records_df.to_parquet(f"records_{start_row}.parquet")
     start_row += chunk_size
 
-# %%
-chunk_size = 4520
+# %% # Put the readings into .parquet files
+chunk_size = initial_chunk_size
 start_row = 0
 while start_row < num_rows:
     chunk_size = chunk_size if start_row + chunk_size < num_rows else num_rows - start_row
@@ -124,5 +117,3 @@ while start_row < num_rows:
     readings_df.to_parquet(f'readings_{start_row}.parquet', index=False)    
     print(f'Parquet file readings_{start_row}.parquet created successfully.')
     start_row += chunk_size
-
-#%%

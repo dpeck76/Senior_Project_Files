@@ -8,17 +8,9 @@ import imblearn as il
 from tensorflow.keras import backend as K
 ##### From CSE 450 NN code:
 # https://colab.research.google.com/github/byui-cse/cse450-course/blob/master/notebooks/hint_nn.ipynb#scrollTo=KlZiVE696408
-# TensorFlow and tf.keras
 import tensorflow as tf
 from tensorflow import keras
-# import numpy as np
 import matplotlib.pyplot as plt
-# import pandas as pd
-# import seaborn as sns
-# import cv2
-# import IPython
-# from six.moves import urllib
-# print(tf.__version__)
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dense, LSTM
 from tensorflow.keras.layers.experimental import preprocessing
@@ -26,10 +18,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import MinMaxScaler
 # %% # choose the y-variable
+initial_chunk_size = 4520
 y_var = "SB"
-possible_diagnoses = pd.read_csv(r"C:\Users\David\Documents\David BYU-Idaho\Fall 2023\DS 499\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\ConditionNames_SNOMED-CT.csv")
+possible_diagnoses = pd.read_csv(r"..\electrocardiogram-database-arrhythmia-study\a-large-scale-12-lead-electrocardiogram-database-for-arrhythmia-study-1.0.0\ConditionNames_SNOMED-CT.csv")
 pos_d = possible_diagnoses["Acronym Name"]
-
+# Here are the diagnoses that are listed in the .csv file that comes with the dataset
 # 1AVB, 2AVB, 2AVB1, 2AVB2, 3AVB, ABI, ALS, APB, AQW, ARS
 # AVB, CCR, CR, ERV, FQRS, IDC, IVB, JEB, JPT, LBBB, LBBBB
 # LFBBB, LVH, LVQRSAL, LVQRSCL, LVQRSLL, MI, MIBW, MIFW
@@ -40,21 +33,17 @@ pos_d = possible_diagnoses["Acronym Name"]
 
 
 # %% # 2:Read in the data
-file_path = "readings_test_" # change to "readings_test_" for doing a small portion of the data to work with before the real model. Use "readings" to run the real thing. It just takes a lot longer
-for i in ("0","50000","100000","150000","200000","250000","300000","350000","400000","450000","500000"):
-    print(i)
+file_path = "readings_" # change to "readings_test_" for doing a small portion of the data to work with before the real model. Use "readings" to run the real thing. It just takes a lot longer
+for i in range(0, 45152, initial_chunk_size):
     if os.path.exists(f"{file_path}{i}.parquet"):
-        print(i)
-        if i == "0":
+        if i == 0:
             dat_df = pd.read_parquet(f"{file_path}{i}.parquet")
         else:
             dat_df = pd.concat([dat_df, pd.read_parquet(f"{file_path}{i}.parquet")])
 
-file_path = "result_test_" # change to "readings_test_" for doing a small portion of the data to work with before the real model. Use "readings" to run the real thing. It just takes a lot longer
-for i in ("0","50000","100000","150000","200000","250000","300000","350000","400000","450000","500000"):
-    print(i)
+file_path = "joined_" 
+for i in range(0, 45152, initial_chunk_size):
     if os.path.exists(f"{file_path}{i}.parquet"):
-        print(i)
         if i == "0":
             y_dat_df = pd.read_parquet(f"{file_path}{i}.parquet")
         else:
@@ -106,18 +95,6 @@ features = X_train.shape[1]
 model = Sequential()
 model.add(LSTM(units=50, input_shape=(features, time_steps)))
 model.add(Dense(units=1, activation='sigmoid'))
-
-
-# model = Sequential()
-# model.add(Dense(128, input_dim=len(X_train[0]), activation='leaky_relu'))
-# # model.add(Dropout(.5))
-# model.add(Dense(192, activation='relu'))
-# model.add(Dense(256, activation='sigmoid'))
-# model.add(Dense(64, activation='sigmoid'))
-# model.add(Dense(1, activation='relu'))
-
-# %% #
-
 # model.compile(loss='binary_crossentropy', optimizer=opt, metrics=["accuracy"])
 # %% # create an optimizer and the additional metrics
 opt = keras.optimizers.Adam(learning_rate=0.001)
@@ -196,26 +173,3 @@ print("accuracy: ", round(accuracy, 5), "\n",
       "recall: ", round(recall, 5), "\n",
       "F1:", round(f1, 5),"\n",
       sep = "")
-
-# %% # Appendix: Visualization and other code for reference
-# Everything in this chunk should be commented out
-# dat = dat_df["val"][1+12*29]
-# peak_indices, _ \
-#     = signal.find_peaks(
-#         dat, 
-#         prominence = (np.max(dat)-np.min(dat))*0.38)
-
-# px.scatter(
-#     x = peak_indices, 
-#     y = dat[peak_indices],
-#     color_discrete_sequence=['red'] 
-# ).add_trace(
-#     px.line(
-#         x = range(len(dat)),
-#         y = dat
-#     ).data[0]
-# )
-
-#####
-# for i in pos_d:
-#     print(i, ": ", dat_df[i].sum(), sep = "", end = "\t")
